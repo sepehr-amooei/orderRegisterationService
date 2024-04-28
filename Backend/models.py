@@ -1,8 +1,8 @@
-from dataBase import Base
+from dataBase import Base_or
 from sqlalchemy import Integer, String, Boolean, Column
 
 
-class Orders(Base):
+class Orders(Base_or):
     __tablename__ = 'orders'
 
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)

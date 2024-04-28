@@ -1,13 +1,7 @@
 from fastapi import FastAPI
+import models
+from dataBase import engine_or
 
 app = FastAPI()
 
-
-@app.get("/")
-async def root():
-    return {"message": "Hello World"}
-
-
-@app.get("/hello/{name}")
-async def say_hello(name: str):
-    return {"message": f"Hello {name}"}
+models.Base_or.metadata.create_all(engine_or)
