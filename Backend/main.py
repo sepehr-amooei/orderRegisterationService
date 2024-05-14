@@ -7,11 +7,20 @@ from typing import Annotated
 from sqlalchemy.orm import Session
 from starlette import status
 from pydantic import BaseModel,Field
+from fastapi.middleware.cors import CORSMiddleware
 import json
 
 
 
 app = FastAPI()
+origins = ['http://localhost:3000']
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 models.Base.metadata.create_all(engine)
 
@@ -29,13 +38,13 @@ class OrderRequest(BaseModel):
     name : str = Field(min_length= 3)
     phone_number: str = Field(min_length=10, max_length=11)
     eyeglass_lense : str | None = Field(default=None)
-    eyeglass_lense_price : int
+    eyeglass_lense_price : int | None = Field(default=0)
     frame_Type  : str | None = Field(default=None)
     frame_brand : str | None = Field(default=None)
-    frame_price : int
-    od :str
-    os : str
-    pd : str
+    frame_price : int  | None = Field(default=0)
+    od :str | None = Field(default=None)
+    os : str | None = Field(default=None)
+    pd : str | None = Field(default=None)
     checkOut : bool
 
     model_config = {
@@ -72,7 +81,12 @@ async def read_order(db: db_dependency, order_id: int = Path(gt=0) ):
 @app.post("/orders", status_code=status.HTTP_201_CREATED)
 async def create_order(db: db_dependency, order_request: OrderRequest ):
     order_model = Orders(**order_request.dict())
-    order_model.total_price = order_request.frame_price + order_request.eyeglass_lense_price
+    if (order_request.frame_price and order_request.eyeglass_lense_price) :
+        order_model.total_price = order_request.frame_price + order_request.eyeglass_lense_price
+    elif(order_request.frame_price) :
+        order_model.total_price = order_request.frame_price
+    elif(order_request.eyeglass_lense_price):
+        order_model.total_price= order_request.eyeglass_lense_price
     date = {"year": datetime.date.today().year, "month": datetime.date.today().month, "day": datetime.date.today().day }
     order_model.date = json.dumps(date)
     db.add(order_model)
@@ -97,7 +111,14 @@ async def update_order(db: db_dependency,
     order_model.os = order_request.os
     order_model.od = order_request.od
     order_model.pd = order_request.pd
-    order_model.total_price = order_request.frame_price + order_request.eyeglass_lense_price
+    # order_model.total_price = order_request.frame_price + order_request.eyeglass_lense_price
+    if (order_request.frame_price and order_request.eyeglass_lense_price) :
+        order_model.total_price = order_request.frame_price + order_request.eyeglass_lense_price
+    elif(order_request.frame_price) :
+        order_model.total_price = order_request.frame_price
+    elif(order_request.eyeglass_lense_price):
+        order_model.total_price= order_request.eyeglass_lense_price
+
     order_model.checkOut = order_request.checkOut
 
     db.add(order_model)
@@ -112,5 +133,4 @@ async def delete_order(db: db_dependency, order_id: int = Path(gt=0)):
 
     db.delete(order_model)
     db.commit()
-
 
